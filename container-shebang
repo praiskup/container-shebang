@@ -1,0 +1,51 @@
+#! /bin/bash
+
+initial_args="$0 $*"
+
+opt_image=fedora:32
+opt_interpret=/bin/sh
+opt_silent=true
+
+debug(){ $opt_silent || echo >&2 " ~ $*" ; }
+
+me=$0
+shebang=$1 ; shift
+script=$1 ; shift
+script_args=( "$@" )
+
+set -e
+
+eval "set -- $shebang"
+while :; do
+    opt=$1
+    case $opt in
+    --image) shift; opt_image=$1; shift ;;
+    --interpret) shift; opt_interpret=$1; shift ;;
+    --debug) opt_silent=false; shift ;;
+    *) break ;;
+    esac
+done
+
+podman=/usr/bin/podman
+test -e "$podman" || podman=/usr/bin/docker
+
+debug "initial args are $initial_args"
+debug "executing script $script by $opt_interpret in $opt_image"
+
+container=$("$podman" run --rm -d "$opt_image" /bin/sleep inf)
+cleanup()
+{
+    "$podman" kill "$container" >/dev/null
+    $clean_temp_file
+}
+trap cleanup EXIT
+temp_file=$(mktemp /tmp/container-shebang-XXXXXXXXX)
+clean_temp_file="rm $temp_file"
+
+# modify the script to have correct shebang
+cp "$script" "$temp_file"
+sed -i "1 s|.*|#! $opt_interpret|" "$temp_file"
+chmod +x "$temp_file"
+
+"$podman" cp "$temp_file" "$container:/container-shebang-script"
+"$podman" exec "$container" /container-shebang-script "${script_args[@]}"
