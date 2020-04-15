@@ -26,9 +26,22 @@ while :; do
     esac
 done
 
-podman=/usr/bin/podman
-test -e "$podman" || podman=/usr/bin/docker
+find_on_path()
+{
+    old_IFS=$IFS
+    IFS=:
+    for part in $PATH; do
+        test -x "$part/$1" && echo "$part/$1" && break
+    done
+    IFS=$old_IFS
+}
 
+# find podman or docker
+podman=${PODMAN-}
+test -n "$podman" || podman=$(find_on_path podman)
+test -n "$podman" || podman=$(find_on_path docker)
+
+debug "using $podman by $me"
 debug "initial args are $initial_args"
 debug "executing script $script by $opt_interpret in $opt_image"
 
