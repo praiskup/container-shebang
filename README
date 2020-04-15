@@ -6,20 +6,36 @@ container as trivial as writing scripts for evaluating host.
 
 For example:
 
-$ cat script
-#! /bin/container-shebang --image fedora:32 --interpret /bin/bash --debug
+See 'script' file:
 
-echo "printing arguments from container"
-for arg; do
-    echo "=> $arg"
-done
+    -----------
+    #! /bin/container-shebang --image fedora:32 --interpret /bin/bash
+    echo "printing arguments from container"
+    for arg; do
+        echo "=> $arg"
+    done
+    -----------
 
-$ ./script a b c "c d"
-printing arguments from container
-=> a
-=> b
-=> c
-=> c d
+or
+
+    -----------
+    #! /bin/container-shebang --image fedora:32 --interpret /usr/bin/python3
+    import sys
+    print("printing arguments from container")
+    for arg in sys.argv[1:]:
+        print("=> " + arg)
+    -----------
+
+When executed, this is the output:
+
+    -----------
+    $ ./script a b c "c d"
+    printing arguments from container
+    => a
+    => b
+    => c
+    => c d
+    -----------
 
 Possible alternatives:
 - https://github.com/adamrehn/docker-script
